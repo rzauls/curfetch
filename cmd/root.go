@@ -8,7 +8,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "curfetch",
 	Short: "Currency RSS feed reader and http api",
-	Long: "This application fetches currency data from a specific RSS feed, uploads them to a database and can serve them as http endpoints",
+	Long: `This application fetches currency data from a specific RSS feed, uploads 
+this data to a database and can serve them as http endpoints`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

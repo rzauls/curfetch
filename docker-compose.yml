@@ -1,0 +1,55 @@
+version: "3"
+services:
+#  # application service container
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: curfetch
+#    restart: unless-stopped
+#    tty: true
+#    ports:
+#      - 8080:8080
+#    environment:
+#      DB_HOST: db
+#      SERVICE_NAME: app
+#      SERVICE_TAGS: dev
+#    working_dir: /var/www/curfetch
+#    networks:
+#      - app-network
+#    volumes:
+#      - ./app:/var/www/curfetch
+
+
+  # Cassandra DB Service
+  db:
+    image: cassandra
+    container_name: curfetch-cassandra
+    restart: unless-stopped
+    tty: true
+    ports:
+      # These ports were chosen as per official Cassandra docker image documentation
+      - '7000:7000' # inter-node cluster communication
+      - '7001:7001' # ssl inter-node cluster communication
+      - '7199:7199' # JMX monitoring
+      - '9042:9042' # client port
+      - '9160:9160' # Thrift client port
+      - '9404:9404' # Prometheus plugin port
+#    environment:
+#      CASS_KEYSPACE: curfetch
+#      CASS_DB_NAME: currencies
+#      CASS_PASSWORD: secret
+    networks:
+      - app-network
+    volumes:
+      - ./db_data:/var/lib/cassandra
+
+# Networks
+networks:
+  app-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  db:
+    driver: local

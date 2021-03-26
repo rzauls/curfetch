@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/mmcdole/gofeed"
+	"github.com/rzauls/curfetch/db"
 	"github.com/spf13/cobra"
+	"log"
 )
+
 // local command flags
 var source string
 
@@ -16,20 +17,26 @@ var fetchCmd = &cobra.Command{
 	Short: "Fetch and update currency data",
 	Long: `Fetches currency data from RSS feed, upserts data into database`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		feed, err := fetchRssFeed(source)
-		if err != nil {
-			log.Fatalf("Failed to fetch RSS feed: %v", err)
-		}
-		fmt.Println(feed.Title)
+		fetch()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(fetchCmd)
-	// define flags
 	fetchCmd.Flags().StringVarP(&source, "source", "s", "https://www.bank.lv/vk/ecb_rss.xml", "rss feed http url")
+}
 
+func fetch() {
+	feed, err := fetchRssFeed(source)
+	if err != nil {
+		log.Fatalf("Failed to fetch RSS feed: %v", err)
+	}
+
+	if err := db.InitDB("localhost:"); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	fmt.Println(feed.Title)
 }
 
 func fetchRssFeed(url string) (feed *gofeed.Feed, err error)  {
