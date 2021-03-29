@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"github.com/gocql/gocql"
+	"os"
 	"strings"
 	"time"
 )
@@ -17,8 +18,8 @@ func InitDB(config CassandraConfig) *gocql.ClusterConfig {
 	cluster := gocql.NewCluster(strings.Join(config.Hosts, ","))
 	cluster.Keyspace = config.Keyspace
 	cluster.Authenticator = gocql.PasswordAuthenticator{
-		Username: "cassandra",
-		Password: "cassandra",
+		Username: os.Getenv("CASS_USERNAME"),
+		Password: os.Getenv("CASS_PASSWORD"),
 	}
 	return cluster
 }
