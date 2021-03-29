@@ -1,7 +1,6 @@
 # Curfetch
 
-This is a CLI application that fetches RSS feed containing currency data from a bank
-and serves this data as two HTTP endpoints. This was written primarily for educational purposes.
+This is a CLI application that fetches RSS feed containing currency data and serves this data as two HTTP endpoints. This was written primarily for educational purposes.
 
 This application is written in go and uses various 3rd party dependencies (modules) for:
  - CLI scaffolding ([spf13/cobra](https://github.com/spf13/cobra)) 
@@ -28,6 +27,7 @@ docker-compose build
 docker-compose up -d
 ```
 *`cassandra` image needs a bit of time until its reachable from other services, so docker-compose spin up time might take a few seconds
+
 4. Populate database with fresh data:
 ```shell
 docker-compose exec app curfetch fetch

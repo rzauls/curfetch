@@ -24,6 +24,7 @@ func InitDB(config CassandraConfig) *gocql.ClusterConfig {
 	return cluster
 }
 
+// Currency - data point for a single currency at single timestamp
 type Currency struct {
 	Code    string 		`json:"code"`
 	Value   string		`json:"value"`

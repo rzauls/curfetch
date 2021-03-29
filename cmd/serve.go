@@ -72,10 +72,12 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func newestHandler(w http.ResponseWriter, r *http.Request) {
+	// fetch data from db
 	rows, err := DB.Newest()
 	if err != nil {
 		log.Fatalf("Failed to fetch data: %v", err)
 	}
+	// serve data
 	if len(rows) > 0 {
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(rows)
@@ -89,10 +91,12 @@ func newestHandler(w http.ResponseWriter, r *http.Request) {
 
 func historyHandler(w http.ResponseWriter, r *http.Request) {
 	currencyCode := strings.ToUpper(mux.Vars(r)["currency"])
+	// fetch data from db
 	rows, err := DB.History(currencyCode)
 	if err != nil {
 		log.Fatalf("Failed to fetch data: %v", err)
 	}
+	// serve data
 	if len(rows) > 0 {
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(rows)
