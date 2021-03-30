@@ -8,15 +8,10 @@ import (
 	"time"
 )
 
-type CassandraConfig struct {
-	Hosts    []string
-	Keyspace string
-}
-
-// InitDB - initialize db connection pool
-func InitDB(config CassandraConfig) *gocql.ClusterConfig {
-	cluster := gocql.NewCluster(strings.Join(config.Hosts, ","))
-	cluster.Keyspace = config.Keyspace
+// InitCluster - initialize db connection pool
+func InitCluster() *gocql.ClusterConfig {
+	cluster := gocql.NewCluster(strings.Join([]string{os.Getenv("CASS_HOST")}, ",")) // potentially you can pass multiple cassandra nodes here
+	cluster.Keyspace = os.Getenv("CASS_KEYSPACE")
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: os.Getenv("CASS_USERNAME"),
 		Password: os.Getenv("CASS_PASSWORD"),
@@ -31,6 +26,7 @@ type Currency struct {
 	PubDate time.Time	`json:"pub_date"`
 }
 
+// CurrencyModel - handler for DB session, used to call DB methods
 type CurrencyModel struct {
 	Session *gocql.Session
 }

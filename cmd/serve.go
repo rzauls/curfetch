@@ -3,22 +3,22 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/rzauls/curfetch/db"
-	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/rzauls/curfetch/db"
+	"github.com/spf13/cobra"
 )
 
 // local command flags
 var port int
 
 // db handler
-var DB db.CurrencyModel
+var DB db.CurrencyModel // using a global to share connection pool between http handlers
 
 // NewServeCmd represents the serve command
 func NewServeCmd() *cobra.Command {
@@ -32,18 +32,17 @@ func NewServeCmd() *cobra.Command {
 	}
 }
 
+// init - initialize command and its flags
 func init() {
 	serveCmd := NewServeCmd()
 	rootCmd.AddCommand(serveCmd)
 	serveCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port for serving API endpoints")
 }
 
+// serve - main command action
 func serve() {
 	// set up db connection
-	cluster := db.InitDB(db.CassandraConfig{
-		Hosts:    []string{os.Getenv("CASS_HOST")}, // potentially you can pass multiple cassandra nodes here
-		Keyspace: "curfetch",
-	})
+	cluster := db.InitCluster()
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -51,8 +50,8 @@ func serve() {
 	defer session.Close()
 	DB = db.CurrencyModel{Session: session}
 
+	// initialize router
 	router := mux.NewRouter().StrictSlash(true)
-	// main routes
 	router.HandleFunc("/", withLogging(healthHandler))
 	router.HandleFunc("/newest", withLogging(newestHandler))
 	router.HandleFunc("/history/{currency}", withLogging(historyHandler))
@@ -62,7 +61,7 @@ func serve() {
 
 	// start server
 	log.Printf("Listening on port %v", port)
-	if err := http.ListenAndServe(":" + strconv.Itoa(port), router); err != nil {
+	if err := http.ListenAndServe(":"+strconv.Itoa(port), router); err != nil {
 		log.Fatalf("Failed to initialize server: %v", err)
 	}
 }
