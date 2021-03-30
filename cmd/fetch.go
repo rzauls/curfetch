@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/mmcdole/gofeed"
-	"github.com/rzauls/curfetch/db"
-	"github.com/spf13/cobra"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/mmcdole/gofeed"
+	"github.com/rzauls/curfetch/db"
+	"github.com/spf13/cobra"
 )
 
 // local command flags
@@ -26,12 +26,14 @@ func NewFetchCmd() *cobra.Command {
 	}
 }
 
+// init - initialize command and its flags
 func init() {
 	fetchCmd := NewFetchCmd()
 	rootCmd.AddCommand(fetchCmd)
 	fetchCmd.Flags().StringVarP(&source, "source", "s", "http://www.bank.lv/vk/ecb_rss.xml", "rss feed http url")
 }
 
+// fetch - main command action
 func fetch() {
 	// fetch feed data
 	feed, err := fetchRssFeed(source)
@@ -45,10 +47,7 @@ func fetch() {
 		log.Fatalf("Failed to parse feed data: %v", err)
 	}
 	// set up db connection
-	cluster := db.InitDB(db.CassandraConfig{
-		Hosts:    []string{os.Getenv("CASS_HOST")}, // potentially you can pass multiple cassandra nodes here
-		Keyspace: "curfetch",
-	})
+	cluster := db.InitCluster()
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -66,11 +65,13 @@ func fetch() {
 	log.Printf("Fetched and inserted \"%v\"", feed.Title)
 }
 
+// fetchRssFeed - fetch rss feed
 func fetchRssFeed(url string) (feed *gofeed.Feed, err error) {
 	fp := gofeed.NewParser()
 	return fp.ParseURL(url)
 }
 
+// parseFeedData - unmarshal feed data into structs
 func parseFeedData(feed *gofeed.Feed) ([]db.Currency, error) {
 	var data []db.Currency
 	for _, item := range feed.Items {
@@ -83,8 +84,13 @@ func parseFeedData(feed *gofeed.Feed) ([]db.Currency, error) {
 	return data, nil
 }
 
+// parseCurrencyString - extract currency data points from feed description
 func parseCurrencyString(item *gofeed.Item) ([]db.Currency, error) {
-	r, _ := regexp.Compile("\\b[A-Z]{3} [0-9]+.[0-9]+\\b")
+	r, err := regexp.Compile(`\\b[A-Z]{3} [0-9]+.[0-9]+\\b`)
+	if err != nil {
+		return nil, err
+	}
+
 	pubDate, err := time.Parse("Mon, 02 Jan 2006 03:04:5 -0700", item.Published)
 	if err != nil {
 		return nil, err
