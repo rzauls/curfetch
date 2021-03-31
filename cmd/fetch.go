@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"log"
-	"regexp"
-	"strings"
-	"time"
-
 	"github.com/mmcdole/gofeed"
 	"github.com/rzauls/curfetch/db"
 	"github.com/spf13/cobra"
+	"log"
+	"regexp"
+	"strings"
 )
 
 // local command flags
@@ -91,11 +89,6 @@ func parseCurrencyString(item *gofeed.Item) ([]db.Currency, error) {
 		return nil, err
 	}
 
-	pubDate, err := time.Parse("Mon, 02 Jan 2006 03:04:5 -0700", item.Published)
-	if err != nil {
-		return nil, err
-	}
-
 	var res []string
 	var currencies []db.Currency
 
@@ -104,7 +97,7 @@ func parseCurrencyString(item *gofeed.Item) ([]db.Currency, error) {
 		currencies = append(currencies, db.Currency{
 			Code:    res[0],
 			Value:   res[1],
-			PubDate: pubDate,
+			PubDate: *item.PublishedParsed,
 		})
 	}
 	return currencies, nil
