@@ -48,13 +48,14 @@ type defaultStorage struct {
 }
 
 // NewMockStorage - generate mock storage for testing
-func NewMockStorage() Storage {
-	return &mockStorage{}
+func NewMockStorage(currency []Currency, timestamp time.Time) Storage {
+	return &mockStorage{currencies: currency, newestDate: timestamp}
 }
 
 // mockStorage - mock storage for testing
 type mockStorage struct {
 	currencies []Currency
+	newestDate time.Time
 }
 
 
@@ -74,6 +75,7 @@ func (m defaultStorage) InsertAllUnique(data []Currency) error {
 }
 
 func (m mockStorage) InsertAllUnique(data []Currency) error {
+	// returns nil on success
 	return nil
 }
 
@@ -115,7 +117,12 @@ func (m defaultStorage) Newest() (data []Currency, err error){
 }
 
 func (m mockStorage) Newest() (data []Currency, err error) {
-	return nil, nil
+	for _, item := range m.currencies {
+		if item.PubDate == m.newestDate {
+			data = append(data, item)
+		}
+	}
+	return data, nil
 }
 
 // History - get newest data points for each currency
@@ -150,5 +157,10 @@ func (m defaultStorage) History(code string) (data []Currency, err error){
 }
 
 func (m mockStorage) History(code string) (data []Currency, err error) {
-	return nil, nil
+	for _, item := range m.currencies {
+		if item.Code == code {
+			data = append(data, item)
+		}
+	}
+	return data, nil
 }
