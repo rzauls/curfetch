@@ -19,7 +19,7 @@ var port int
 
 // Server - struct for passing around shared resources
 type Server struct {
-	db db.CurrencyModel
+	db db.Storage
 }
 
 // NewServeCmd represents the serve command
@@ -44,18 +44,14 @@ func init() {
 // serve - main command action
 func serve() {
 	// set up db connection
-	cluster := db.InitCluster()
-	session, err := cluster.CreateSession()
+	session, err := db.NewSession()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer session.Close()
 
-
 	// initialize router
-	s := Server{
-		db: db.CurrencyModel{Session: session},
-	}
+	s := Server{db: db.NewStorage(session)}
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", withLogging(s.healthHandler))
 	router.HandleFunc("/newest", withLogging(s.newestHandler))

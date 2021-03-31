@@ -9,14 +9,18 @@ import (
 )
 
 // InitCluster - initialize db connection pool
-func InitCluster() *gocql.ClusterConfig {
+func NewSession() (*gocql.Session, error) {
 	cluster := gocql.NewCluster(strings.Join([]string{os.Getenv("CASS_HOST")}, ",")) // potentially you can pass multiple cassandra nodes here
 	cluster.Keyspace = os.Getenv("CASS_KEYSPACE")
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: os.Getenv("CASS_USERNAME"),
 		Password: os.Getenv("CASS_PASSWORD"),
 	}
-	return cluster
+	session, err := cluster.CreateSession()
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
 }
 
 // Currency - data point for a single currency at single timestamp
@@ -26,13 +30,36 @@ type Currency struct {
 	PubDate time.Time	`json:"pub_date"`
 }
 
-// CurrencyModel - handler for DB session, used to call DB methods
-type CurrencyModel struct {
+// Storage - interface for DB session, used to call DB methods
+type Storage interface {
+	InsertAllUnique(data []Currency) error
+	Newest() (data []Currency, err error)
+	History(code string) (data []Currency, err error)
+}
+
+// NewStorage - generate storage method handler
+func NewStorage(session *gocql.Session) Storage {
+	return &defaultStorage{Session: session}
+}
+
+// defaultStorage - cassandra session handler
+type defaultStorage struct {
 	Session *gocql.Session
 }
 
+// NewMockStorage - generate mock storage for testing
+func NewMockStorage() Storage {
+	return &mockStorage{}
+}
+
+// mockStorage - mock storage for testing
+type mockStorage struct {
+	currencies []Currency
+}
+
+
 // InsertAllUnique - insert all unique rows
-func (m CurrencyModel) InsertAllUnique(data []Currency) error {
+func (m defaultStorage) InsertAllUnique(data []Currency) error {
 	ctx := context.Background()
 	// might be worth doing a batch insert, but the sample size is so small that it doesnt matter
 	for _, row := range data {
@@ -46,8 +73,12 @@ func (m CurrencyModel) InsertAllUnique(data []Currency) error {
 	return nil
 }
 
+func (m mockStorage) InsertAllUnique(data []Currency) error {
+	return nil
+}
+
 // Newest - get newest data points for each currency
-func (m CurrencyModel) Newest() (data []Currency, err error){
+func (m defaultStorage) Newest() (data []Currency, err error){
 	var code string
 	var value string
 	ctx := context.Background()
@@ -83,8 +114,12 @@ func (m CurrencyModel) Newest() (data []Currency, err error){
 	return data, nil
 }
 
+func (m mockStorage) Newest() (data []Currency, err error) {
+	return nil, nil
+}
+
 // History - get newest data points for each currency
-func (m CurrencyModel) History(code string) (data []Currency, err error){
+func (m defaultStorage) History(code string) (data []Currency, err error){
 	var value string
 	var pubDate time.Time
 	ctx := context.Background()
@@ -112,4 +147,8 @@ func (m CurrencyModel) History(code string) (data []Currency, err error){
 	}
 	ctx.Done()
 	return data, nil
+}
+
+func (m mockStorage) History(code string) (data []Currency, err error) {
+	return nil, nil
 }
