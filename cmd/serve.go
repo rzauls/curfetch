@@ -17,8 +17,10 @@ import (
 // local command flags
 var port int
 
-// db handler
-var DB db.CurrencyModel // using a global to share connection pool between http handlers
+// Server - struct for passing around shared resources
+type Server struct {
+	db db.CurrencyModel
+}
 
 // NewServeCmd represents the serve command
 func NewServeCmd() *cobra.Command {
@@ -48,13 +50,16 @@ func serve() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer session.Close()
-	DB = db.CurrencyModel{Session: session}
+
 
 	// initialize router
+	s := Server{
+		db: db.CurrencyModel{Session: session},
+	}
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", withLogging(healthHandler))
-	router.HandleFunc("/newest", withLogging(newestHandler))
-	router.HandleFunc("/history/{currency}", withLogging(historyHandler))
+	router.HandleFunc("/", withLogging(s.healthHandler))
+	router.HandleFunc("/newest", withLogging(s.newestHandler))
+	router.HandleFunc("/history/{currency}", withLogging(s.historyHandler))
 
 	// not found route
 	router.NotFoundHandler = router.NewRoute().BuildOnly().HandlerFunc(withLogging(http.NotFound)).GetHandler()
@@ -66,13 +71,13 @@ func serve() {
 	}
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "curfetch v1.0 @ %v", time.Now())
 }
 
-func newestHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newestHandler(w http.ResponseWriter, r *http.Request) {
 	// fetch data from db
-	rows, err := DB.Newest()
+	rows, err := s.db.Newest()
 	if err != nil {
 		log.Fatalf("Failed to fetch data: %v", err)
 	}
@@ -88,10 +93,10 @@ func newestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func historyHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) historyHandler(w http.ResponseWriter, r *http.Request) {
 	currencyCode := strings.ToUpper(mux.Vars(r)["currency"])
 	// fetch data from db
-	rows, err := DB.History(currencyCode)
+	rows, err := s.db.History(currencyCode)
 	if err != nil {
 		log.Fatalf("Failed to fetch data: %v", err)
 	}
