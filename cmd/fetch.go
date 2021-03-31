@@ -84,7 +84,7 @@ func parseFeedData(feed *gofeed.Feed) ([]db.Currency, error) {
 
 // parseCurrencyString - extract currency data points from feed description
 func parseCurrencyString(item *gofeed.Item) ([]db.Currency, error) {
-	r, err := regexp.Compile(`\\b[A-Z]{3} [0-9]+.[0-9]+\\b`)
+	r, err := regexp.Compile("\\b[A-Z]{3} [0-9]+.[0-9]+\\b")
 	if err != nil {
 		return nil, err
 	}
