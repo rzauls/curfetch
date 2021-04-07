@@ -19,7 +19,7 @@ var port int
 
 // Server - struct for passing around shared resources
 type Server struct {
-	db db.CurrencyModel
+	db db.Storage
 }
 
 // NewServeCmd represents the serve command
@@ -44,18 +44,14 @@ func init() {
 // serve - main command action
 func serve() {
 	// set up db connection
-	cluster := db.InitCluster()
-	session, err := cluster.CreateSession()
+	session, err := db.NewSession()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer session.Close()
 
-
 	// initialize router
-	s := Server{
-		db: db.CurrencyModel{Session: session},
-	}
+	s := Server{db: db.NewStorage(session)}
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", withLogging(s.healthHandler))
 	router.HandleFunc("/newest", withLogging(s.newestHandler))
@@ -82,13 +78,14 @@ func (s *Server) newestHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to fetch data: %v", err)
 	}
 	// serve data
+	w.Header().Set("Content-Type", "application/json")
 	if len(rows) > 0 {
-		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(rows)
 		if err != nil {
 			log.Fatalf("Failed to serve data: %v", err)
 		}
 	} else {
+		w.WriteHeader(http.StatusNoContent)
 		fmt.Fprintf(w, "no data")
 	}
 }
@@ -101,13 +98,14 @@ func (s *Server) historyHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to fetch data: %v", err)
 	}
 	// serve data
+	w.Header().Set("Content-Type", "application/json")
 	if len(rows) > 0 {
-		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(rows)
 		if err != nil {
 			log.Fatalf("Failed to serve data: %v", err)
 		}
 	} else {
+		w.WriteHeader(http.StatusNoContent)
 		fmt.Fprintf(w, "no data for: %v", currencyCode)
 	}
 }

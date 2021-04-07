@@ -45,16 +45,15 @@ func fetch() {
 		log.Fatalf("Failed to parse feed data: %v", err)
 	}
 	// set up db connection
-	cluster := db.InitCluster()
-	session, err := cluster.CreateSession()
+	session, err := db.NewSession()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer session.Close()
-	currency := db.CurrencyModel{Session: session}
+	storage := db.NewStorage(session)
 
 	// post data to db
-	err = currency.InsertAllUnique(data)
+	err = storage.InsertAllUnique(data)
 	if err != nil {
 		log.Fatalf("Failed to insert data: %v", err)
 	}
